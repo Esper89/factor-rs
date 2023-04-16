@@ -1,0 +1,20 @@
+[package]
+name = "factor"
+version = "1.0.0"
+edition = "2021"
+description = "A command-line program for listing the prime factors of a number"
+license = "MIT"
+
+[features]
+default = ["full-cli"]
+full-cli = ["clap"]
+
+[dependencies]
+clap = { version = "4.2.2", features = ["derive"], optional = true }
+prime_factorization = "1.0.3"
+
+[profile.release]
+lto = true
+panic = "abort"
+codegen-units = 1
+strip = true
