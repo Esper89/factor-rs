@@ -46,7 +46,7 @@ fn parse_args() -> Vec<u128>
     std::env::args_os()
         .enumerate()
         .skip(1)
-        .filter_map(|(i, res)| res
+        .filter_map(|(i, s)| s
             .into_string()
             .map_err(|_| eprintln!("argument {i} is not a valid integer: invalid unicode"))
             .ok()
