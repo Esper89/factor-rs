@@ -1,18 +1,26 @@
 # factor-rs
 
-A command-line program for listing the prime factors of a number. Uses the `prime_factorization`
-library. Supports all non-negative integers below 2<sup>128</sup>.
+A command-line program for listing the prime factors of a number or fraction. Uses the
+`prime_factorization` library. Supports all integers between -2<sup>128</sup> and 2<sup>128</sup>,
+all fractions (of either sign) with numerator and denominator below 2<sup>128</sup>, and all decimal
+numbers with a mantissa below 2<sup>128</sup> and an exponent below 39. Fractions and decimals are
+also reduced to their lowest forms.
 
 ## Examples
 
 ```
-$ factor 0 1 3 8 12 255
+$ factor 0 1 3 8.0 12 -255 4/12 6.125 -7/3 5/0 0/0
 0 = 0
 1 = 1
 3 = 3
 8 = 2^3
 12 = 2^2 * 3
-255 = 3 * 5 * 17
+-255 = -1 * 3 * 5 * 17
+4/12 = 3^-1 = 1/3
+6.125 = 2^-3 * 7^2 = 49/8
+-7/3 = -1 * 3^-1 * 7
+5/0 = 5 * 1/0
+0/0 = 0/0
 ```
 
 ## License

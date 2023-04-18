@@ -1,17 +1,15 @@
 [package]
 name = "factor"
-version = "1.0.0"
+version = "1.1.0"
 edition = "2021"
-description = "A command-line program for listing the prime factors of a number"
+description = "A command-line program for listing the prime factors of a number or fraction"
 license = "MIT"
 
-[features]
-default = ["full-cli"]
-full-cli = ["clap"]
-
 [dependencies]
-clap = { version = "4.2.2", features = ["derive"], optional = true }
+num = "0.4.0"
 prime_factorization = "1.0.3"
+radixal = "0.3.0"
+thiserror = "1.0.40"
 
 [profile.release]
 lto = true
