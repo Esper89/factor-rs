@@ -1,18 +1,26 @@
 [package]
-name = "factor"
+name = "factor-rs"
 version = "1.1.0"
 edition = "2021"
 description = "A command-line program for listing the prime factors of a number or fraction"
+repository = "https://github.com/Esper89/factor-rs"
 license = "MIT"
+keywords = ["primes", "factorization", "fractions"]
+categories = ["command-line-utilities", "mathematics"]
+default-run = "factor"
 
-[dependencies]
-num = "0.4.0"
-prime_factorization = "1.0.3"
-radixal = "0.3.0"
-thiserror = "1.0.40"
+[[bin]]
+name = "factor"
+path = "src/main.rs"
 
 [profile.release]
 lto = true
 panic = "abort"
 codegen-units = 1
 strip = true
+
+[dependencies]
+num = "0.4.0"
+prime_factorization = "1.0.3"
+radixal = "0.3.0"
+thiserror = "1.0.40"

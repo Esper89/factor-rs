@@ -187,11 +187,11 @@ fn parse_args() -> Vec<Arg>
         )
         .collect();
 
-    if print_version { eprintln!("factor-rs v{}", env!("CARGO_PKG_VERSION")) }
+    if print_version { eprintln!("{} v{}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_VERSION")) }
 
     if print_help
     {
-        eprintln!("factor-rs: {}", env!("CARGO_PKG_DESCRIPTION"));
+        eprintln!("{}: {}", env!("CARGO_PKG_NAME"), env!("CARGO_PKG_DESCRIPTION"));
         eprintln!("usage: {} [NUMBERS]...",
         {
             #[cfg(windows)] { concat!(env!("CARGO_BIN_NAME"), ".exe") }
