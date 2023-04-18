@@ -229,70 +229,73 @@ impl TryFrom<&str> for Arg
             Ok((first, second))
         }
 
-        fn parse_signed(s: &str) -> Result<(bool, u128), ParseIntError>
-        {
-            let mut sign = false;
-
-            let s = if let Some(val) = s.strip_prefix('-') { sign = true; val } else { s };
-            Ok((sign, s.parse()?))
-        }
-
         match pair(s.split('/'))
         {
             Ok((num, denom)) => match pair(s.split('.'))
             {
                 Ok(_) => Err(ArgError::DecimalInFraction),
-                Err(0 | 1) =>
-                {
-                    let (num_sign, num) = parse_signed(num.trim())
-                        .map_err(ArgError::NumeratorInvalid)?;
-
-                    let (mut denom_sign, denom) = parse_signed(denom.trim())
-                        .map_err(ArgError::DenominatorInvalid)?;
-
-                    if denom == 0 { denom_sign = false }
-
-                    Ok(Arg::Fraction { sign: num_sign ^ denom_sign, num, denom })
-                },
+                Err(0 | 1) => parse_frac(num, denom),
                 Err(n) => Err(ArgError::TooManyDecimals(n - 1)),
             },
             Err(0 | 1) => match pair(s.split('.'))
             {
-                Ok((whole, decimal)) =>
-                {
-                    let (sign, whole) = match whole.trim_start()
-                    {
-                        "" => (false, 0),
-                        "-" => (true, 0),
-                        s => parse_signed(s).map_err(ArgError::DecimalInvalid)?,
-                    };
-
-                    let decimal = decimal.trim_end().trim_end_matches('0');
-                    let exp = decimal.len();
-                    let decimal = if decimal.is_empty() { 0 }
-                    else { decimal.parse().map_err(ArgError::DecimalInvalid)? };
-
-                    if exp > 38 { return Err(ArgError::DecimalExpTooLarge(exp)) }
-                    let mantissa = whole
-                        .checked_mul(num::pow(10, exp))
-                        .and_then(|n| n.checked_add(decimal))
-                        .ok_or(ArgError::MantissaTooLarge)?;
-
-                    if exp == 0 { Ok(Arg::Integer { sign, val: mantissa }) }
-                    else { Ok(Arg::Decimal { sign, mantissa, exp: exp as u8 }) }
-                },
-                Err(0 | 1) =>
-                {
-                    let (sign, val) = parse_signed(s.trim())
-                        .map_err(ArgError::IntegerInvalid)?;
-
-                    Ok(Arg::Integer { sign, val })
-                },
+                Ok((whole, decimal)) => parse_decimal(whole, decimal),
+                Err(0 | 1) => parse_int(s),
                 Err(n) => Err(ArgError::TooManyDecimals(n - 1)),
             },
             Err(n) => Err(ArgError::TooManyFractions(n - 1)),
         }
     }
+}
+
+fn parse_int(val: &str) -> Result<Arg, ArgError>
+{
+    let (sign, val) = parse_signed(val.trim()).map_err(ArgError::IntegerInvalid)?;
+
+    Ok(Arg::Integer { sign, val })
+}
+
+fn parse_frac(num: &str, denom: &str) -> Result<Arg, ArgError>
+{
+    let (mut num_sign, num) = parse_signed(num.trim()).map_err(ArgError::NumeratorInvalid)?;
+    let (mut denom_sign, denom) = parse_signed(denom.trim()).map_err(ArgError::DenominatorInvalid)?;
+
+    if num == 0 { num_sign = false }
+    if denom == 0 { denom_sign = false }
+
+    Ok(Arg::Fraction { sign: num_sign ^ denom_sign, num, denom })
+}
+
+fn parse_decimal(whole: &str, decimal: &str) -> Result<Arg, ArgError>
+{
+    let (sign, whole) = match whole.trim_start()
+    {
+        "" => (false, 0),
+        "-" => (true, 0),
+        s => parse_signed(s).map_err(ArgError::DecimalInvalid)?,
+    };
+
+    let decimal = decimal.trim_end().trim_end_matches('0');
+    let exp = decimal.len();
+    let decimal = if decimal.is_empty() { 0 }
+    else { decimal.parse().map_err(ArgError::DecimalInvalid)? };
+
+    if exp > 38 { return Err(ArgError::DecimalExpTooLarge(exp)) }
+    let mantissa = whole
+        .checked_mul(num::pow(10, exp))
+        .and_then(|n| n.checked_add(decimal))
+        .ok_or(ArgError::MantissaTooLarge)?;
+
+    if exp == 0 { Ok(Arg::Integer { sign, val: mantissa }) }
+    else { Ok(Arg::Decimal { sign, mantissa, exp: exp as u8 }) }
+}
+
+fn parse_signed(s: &str) -> Result<(bool, u128), ParseIntError>
+{
+    let mut sign = false;
+
+    let s = if let Some(val) = s.strip_prefix('-') { sign = true; val } else { s };
+    Ok((sign, s.parse()?))
 }
 
 #[derive(Error, Debug, Clone)]
