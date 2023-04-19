@@ -1,6 +1,6 @@
 [package]
 name = "factor-rs"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2021"
 description = "A command-line program for listing the prime factors of a number or fraction"
 repository = "https://github.com/Esper89/factor-rs"
@@ -20,6 +20,7 @@ codegen-units = 1
 strip = true
 
 [dependencies]
+either = "1.8.1"
 num = "0.4.0"
 prime_factorization = "1.0.3"
 radixal = "0.3.0"

@@ -1,16 +1,14 @@
 use std::{
-    cmp::Ordering,
     env,
     fmt,
     io::{self, Write as _},
-    iter,
     num::ParseIntError,
     str,
     sync::atomic::{AtomicBool, Ordering as AtomicOrdering},
 };
-use prime_factorization::Factorization;
 use radixal::IntoDigits;
 use thiserror::Error;
+use factor_rs::Fraction;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 enum Arg
@@ -20,9 +18,6 @@ enum Arg
     Decimal { sign: bool, mantissa: u128, exp: u8 },
 }
 
-#[derive(Debug, Copy, Clone, Eq, PartialEq)]
-struct Fraction { sign: bool, num: u128, denom: u128 }
-
 fn main()
 {
     for arg in parse_args()
@@ -30,118 +25,39 @@ fn main()
         print!("{arg} = ");
         io::stdout().flush().expect("failed to flush stdout");
 
-        let frac = arg.into();
-        match frac
-        {
-            Fraction { num: 0, denom: 0, .. } => { println!("0/0"); continue },
-            Fraction { num: 0, .. } => { println!("0"); continue },
-            Fraction { sign: false, num, denom } if num == denom => { println!("1"); continue },
-            Fraction { sign: true, num, denom } if num == denom => { println!("-1"); continue },
-            _ => (),
-        }
+        let frac: Fraction = arg.into();
+        let mut factors = frac.factorize();
 
-        let mut first = true;
-        if frac.sign { print!("-1"); first = false; }
-
-        let mut reduced = Fraction { sign: frac.sign, num: 1, denom: 1 };
+        let mut reduced = Fraction::ONE;
         let mut print_reduced = false;
 
-        for (val, exp) in factorize(frac.num, frac.denom)
+        if let Some(fact) = factors.next()
         {
-            if exp > 0 { reduced.num *= num::pow(val, exp as usize) }
-            else { reduced.denom *= num::pow(val, exp.abs() as usize) }
+            print!("{fact}");
 
-            if first
-            {
-                if exp == 1 { print!("{val}") }
-                else { print!("{val}^{exp}"); print_reduced = true }
-            }
-            else
-            {
-                if exp == 1 { print!(" * {val}") }
-                else { print!(" * {val}^{exp}") }
+            reduced *= Into::<Fraction>::into(fact);
+            if fact.has_exponent() { print_reduced = true }
 
+            for fact in factors
+            {
+                print!(" * {fact}");
+
+                reduced *= Into::<Fraction>::into(fact);
                 print_reduced = true;
             }
-
-            first = false;
         }
 
-        if frac.denom == 0
+        print_reduced &= match arg
         {
-            if first { print!("1/0") } else { print!(" * 1/0") }
-        }
-        else
-        {
-            if first { panic!("no factors") }
+            Arg::Integer { .. } => false,
+            Arg::Fraction { .. } if frac != reduced => true,
+            Arg::Fraction { .. } => false,
+            Arg::Decimal { .. } => true,
+        };
 
-            print_reduced &= match arg
-            {
-                Arg::Integer { .. } => false,
-                Arg::Fraction { .. } if frac != reduced => true,
-                Arg::Fraction { .. } => false,
-                Arg::Decimal { .. } => true,
-            };
-
-            if print_reduced { print!(" = {reduced}") }
-        }
-
+        if print_reduced { print!(" = {reduced}") }
         println!();
     }
-}
-
-fn factorize(numerator: u128, denominator: u128) -> impl Iterator<Item = (u128, i64)>
-{
-    let mut num = Factorization::run(numerator)
-        .prime_factor_repr()
-        .into_iter()
-        .map(|(val, exp)| (val, exp as i64));
-
-    let mut denom = Factorization::run(denominator)
-        .prime_factor_repr()
-        .into_iter()
-        .map(|(val, exp)| (val, -(exp as i64)));
-
-    let mut num_curr = num.next();
-    let mut denom_curr = denom.next();
-
-    iter::from_fn(move ||
-    {
-        let Some((num_val, num_exp)) = num_curr else
-        {
-            let res = denom_curr;
-            denom_curr = denom.next();
-            return res
-        };
-
-        let Some((denom_val, denom_exp)) = denom_curr else
-        {
-            let res = num_curr;
-            num_curr = num.next();
-            return res
-        };
-
-        match num_val.cmp(&denom_val)
-        {
-            Ordering::Less =>
-            {
-                num_curr = num.next();
-                Some((num_val, num_exp))
-            },
-            Ordering::Equal =>
-            {
-                num_curr = num.next();
-                denom_curr = denom.next();
-                Some((num_val, num_exp + denom_exp))
-            },
-            Ordering::Greater =>
-            {
-                denom_curr = denom.next();
-                Some((denom_val, denom_exp))
-            },
-        }
-    })
-    .filter(|(val, exp)| *exp != 0 && *val != 1 && *val != 0)
 }
 
 fn parse_args() -> Vec<Arg>
@@ -348,7 +264,7 @@ impl fmt::Display for Arg
             Arg::Integer { val: 0, .. } => write!(f, "0"),
             Arg::Integer { sign: false, val } => write!(f, "{val}"),
             Arg::Integer { sign: true, val } => write!(f, "-{val}"),
-            Arg::Fraction { num: 0, denom, .. } => write!(f, "0/{denom}"),
+            Arg::Fraction { num: 0, denom: 0, .. } => write!(f, "0/0"),
             Arg::Fraction { sign: false, num, denom } => write!(f, "{num}/{denom}"),
             Arg::Fraction { sign: true, num, denom } => write!(f, "-{num}/{denom}"),
             Arg::Decimal { sign, mantissa, exp } =>
@@ -382,23 +298,6 @@ impl fmt::Display for Arg
 
                 if trailing_zero { write!(f, "0") } else { Ok(()) }
             },
-        }
-    }
-}
-
-impl fmt::Display for Fraction
-{
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result
-    {
-        match self
-        {
-            Fraction { num: 0, denom: 0, .. } => write!(f, "0/0"),
-            Fraction { num: 0, .. } => write!(f, "0"),
-            Fraction { denom: 0, .. } => write!(f, "1/0"),
-            Fraction { sign: false, num, denom: 1 } => write!(f, "{num}"),
-            Fraction { sign: true, num, denom: 1 } => write!(f, "-{num}"),
-            Fraction { sign: false, num, denom } => write!(f, "{num}/{denom}"),
-            Fraction { sign: true, num, denom } => write!(f, "-{num}/{denom}"),
         }
     }
 }
