@@ -47,15 +47,13 @@ fn main()
             }
         }
 
-        print_reduced &= match arg
+        if print_reduced
+            && matches!(arg, Arg::Fraction { .. } | Arg::Decimal { .. })
+            && frac != reduced
         {
-            Arg::Integer { .. } => false,
-            Arg::Fraction { .. } if frac != reduced => true,
-            Arg::Fraction { .. } => false,
-            Arg::Decimal { .. } => true,
-        };
+            print!(" = {reduced}");
+        }
 
-        if print_reduced { print!(" = {reduced}") }
         println!();
     }
 }
