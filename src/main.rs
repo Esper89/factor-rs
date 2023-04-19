@@ -4,7 +4,7 @@ use std::{
     io::{self, Write as _},
     num::ParseIntError,
     str,
-    sync::atomic::{AtomicBool, Ordering as AtomicOrdering},
+    sync::atomic::{AtomicBool, Ordering},
 };
 use radixal::IntoDigits;
 use thiserror::Error;
@@ -73,7 +73,7 @@ fn parse_args() -> Vec<Arg>
             .map_err(|_|
             {
                 eprintln!("error: argument {i} is not valid unicode");
-                print_try_help.store(true, AtomicOrdering::Relaxed);
+                print_try_help.store(true, Ordering::Relaxed);
             })
             .ok()
         )
@@ -85,7 +85,7 @@ fn parse_args() -> Vec<Arg>
             Some(opt) =>
             {
                 eprintln!("error: unknown option '{opt}'");
-                print_try_help.store(true, AtomicOrdering::Relaxed);
+                print_try_help.store(true, Ordering::Relaxed);
                 false
             },
             None => true,
@@ -95,7 +95,7 @@ fn parse_args() -> Vec<Arg>
             .map_err(|e|
             {
                 eprintln!("error: argument '{s}' is not a valid number: {e}");
-                print_try_help.store(true, AtomicOrdering::Relaxed);
+                print_try_help.store(true, Ordering::Relaxed);
             })
             .ok()
         )
