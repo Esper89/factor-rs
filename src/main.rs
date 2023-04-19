@@ -267,37 +267,41 @@ impl fmt::Display for Arg
             Arg::Fraction { num: 0, denom: 0, .. } => write!(f, "0/0"),
             Arg::Fraction { sign: false, num, denom } => write!(f, "{num}/{denom}"),
             Arg::Fraction { sign: true, num, denom } => write!(f, "-{num}/{denom}"),
-            Arg::Decimal { sign, mantissa, exp } =>
-            {
-                let mut digits = mantissa
-                    .into_decimal_digits()
-                    .rev()
-                    .enumerate()
-                    .rev()
-                    .map(|(i, d)|
-                        (i as u8, char::from_digit(d as u32, 10).expect("invalid digit"))
-                    );
-
-                let Some((i, digit)) = digits.next() else { return write!(f, "0.0") };
-                if *sign { write!(f, "-")? }
-
-                if i < *exp
-                {
-                    write!(f, "0.")?;
-                    for _ in 0..(exp - i - 1) { write!(f, "0")? }
-                }
-
-                write!(f, "{digit}")?;
-                let mut trailing_zero = if i == *exp { write!(f, ".")?; true } else { false };
-
-                for (i, digit) in digits
-                {
-                    write!(f, "{digit}")?;
-                    trailing_zero = if i == *exp { write!(f, ".")?; true } else { false };
-                }
-
-                if trailing_zero { write!(f, "0") } else { Ok(()) }
-            },
+            Arg::Decimal { sign, mantissa, exp } => fmt_decimal(f, *sign, *mantissa, *exp),
         }
     }
+}
+
+fn fmt_decimal(f: &mut fmt::Formatter, sign: bool, mantissa: u128, exp: u8) -> fmt::Result
+{
+    let mut digits = mantissa
+        .into_decimal_digits()
+        .rev()
+        .enumerate()
+        .rev()
+        .map(|(i, d)|
+            (i as u8, char::from_digit(d as u32, 10).expect("invalid digit"))
+        );
+
+    let Some((i, digit)) = digits.next() else { return write!(f, "0.0") };
+    if sign { write!(f, "-")? }
+
+    if i < exp
+    {
+        write!(f, "0.")?;
+        for _ in 0..(exp - i - 1) { write!(f, "0")? }
+    }
+
+    write!(f, "{digit}")?;
+    let mut trailing_zero = if i == exp { write!(f, ".")?; true } else { false };
+
+    for (i, digit) in digits
+    {
+        write!(f, "{digit}")?;
+        trailing_zero = if i == exp { write!(f, ".")?; true } else { false };
+    }
+
+    if trailing_zero { write!(f, "0")? }
+
+    Ok(())
 }
