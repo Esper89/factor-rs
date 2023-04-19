@@ -3,8 +3,8 @@
 A command-line program for listing the prime factors of a number or fraction. Uses the
 `prime_factorization` library. Supports all integers between -2<sup>128</sup> and 2<sup>128</sup>,
 all fractions (of either sign) with numerator and denominator below 2<sup>128</sup>, and all decimal
-numbers with a mantissa below 2<sup>128</sup> and an exponent below 39. Fractions and decimals are
-also reduced to their lowest forms.
+numbers (of either sign) with a mantissa below 2<sup>128</sup> and an exponent below 39. Fractions
+and decimals are also reduced to their lowest forms.
 
 ## Examples
 
