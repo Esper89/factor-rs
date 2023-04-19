@@ -176,8 +176,10 @@ fn parse_frac(num: &str, denom: &str) -> Result<Arg, ArgError>
 
     if num == 0 { num_sign = false }
     if denom == 0 { denom_sign = false }
+    let sign = num_sign ^ denom_sign;
 
-    Ok(Arg::Fraction { sign: num_sign ^ denom_sign, num, denom })
+    if denom == 1 { Ok(Arg::Integer { sign, val: num }) }
+    else { Ok(Arg::Fraction { sign, num, denom }) }
 }
 
 fn parse_decimal(whole: &str, decimal: &str) -> Result<Arg, ArgError>
