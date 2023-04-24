@@ -47,11 +47,19 @@ fn main()
             }
         }
 
-        if print_reduced
-            && matches!(arg, Arg::Fraction { .. } | Arg::Decimal { .. })
-            && frac != reduced
+        if print_reduced && matches!(arg, Arg::Fraction { .. } | Arg::Decimal { .. })
         {
-            print!(" = {reduced}");
+            if frac != reduced { print!(" = {reduced}") }
+            else
+            {
+                match reduced
+                {
+                    Fraction { num: 0, denom: 0, .. } => print!(" = 0/0"),
+                    Fraction { sign: false, num: 2.., denom: 0 } => print!(" = 1/0"),
+                    Fraction { sign: true, num: 2.., denom: 0 } => print!(" = -1/0"),
+                    _ => (),
+                }
+            }
         }
 
         println!();
